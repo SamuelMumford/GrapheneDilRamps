@@ -111,9 +111,10 @@ plt.show()
 Bdata = np.array(B0V[maski])
 fdata = np.array((f0V-np.mean(f0V_zeroB)-p0V[0])[maski])
 
-def FF(x, a, b, d, e, c):
-    q1 = (2*a + 1)/(2*a)
-    q2 = (2*d + 1)/(2*d)
+def FF(x, a, b, d, e):
+    c = 1.3
+    q1 = (2*a + 1)/(a)
+    q2 = (2*d + 1)/(d)
     l1 = 1/(2*a)
     l2 = 1/(2*d)
     polyP = b*(q1/np.tanh(q1*c*a*x) - l1/(np.tanh(c*a*x*l1)))
@@ -122,11 +123,10 @@ def FF(x, a, b, d, e, c):
     #polyP += g*np.abs(x)
     return polyP
 
-u = 7.2
-ff = FF(Bdata, .5, u*(1.005),  1,  -u, 1.22)
-p0 = [1.5, 7.2,  .5,  -7.2, 1.22]
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
@@ -144,10 +144,10 @@ Bdata = np.array(Bm2V[maskiii])
 fdata = np.array((fm2V-np.mean(fm2V_zeroB)-pm2V[0])[maskiii])
 
 
-ff = FF(Bdata, .5, u*(1.005),  1,  -u, 1.22)
-p0 = [1.5, 7.2,  .5,  -7.2, 1.22]
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
@@ -157,10 +157,10 @@ fdm2 = (fdata - ff)/Bdata
 Bdata = np.array(B2V[maskii])
 fdata = np.array((f2V-np.mean(f2V_zeroB)-p2V[0])[maskii])
 
-ff = FF(Bdata, .5, u*(1.005),  1,  -u, 1.22)
-p0 = [1.5, 7.2,  .5,  -7.2, 1.22]
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 

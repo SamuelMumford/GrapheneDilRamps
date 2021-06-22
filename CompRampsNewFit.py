@@ -111,20 +111,22 @@ plt.show()
 Bdata = np.array(B0V[maski])
 fdata = np.array((f0V-np.mean(f0V_zeroB)-p0V[0])[maski])
 
-def FF(x, a, b, c, d, e, f, g):
-    q1 = (2*a + 1)/(2*a)
-    q2 = (2*d + 1)/(2*d)
+def FF(x, a, b, d, e, g):
+    c=1.3
+    q1 = (2*a + 1)/(a)
+    q2 = (2*d + 1)/(d)
     l1 = 1/(2*a)
     l2 = 1/(2*d)
     polyP = b*(q1/np.tanh(q1*c*a*x) - l1/(np.tanh(c*a*x*l1)))
     polyP += e*(q2/np.tanh(q2*c*d*x) - l2/(np.tanh(c*x*d*l2)))
-    polyP += g*x**2 + f*x
+    polyP += g*x**2
     return x*polyP
 
-ff = FF(Bdata, .5, -3,  1,  3,  3,  1, 0)
-p0 = [1.5, -7.2,  1.5,  .5,  7.2,  0, 0]
+
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708, .01)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708, .01]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4], popt[5], popt[6])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
@@ -141,10 +143,10 @@ fd0 = (fdata - ff)/Bdata
 Bdata = np.array(Bm2V[maskiii])
 fdata = np.array((fm2V-np.mean(fm2V_zeroB)-pm2V[0])[maskiii])
 
-ff = FF(Bdata, -5.67252155e-01, -5.70154333e+00,  8.55624761e+00,  3.02469772e-01,  4.55618878e+00,  7.17531028e-01, 0)
-p0 = [.5, -3,  1,  3,  3,  1, 0]
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708, .01)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708, .01]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4], popt[5], popt[6])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
@@ -154,10 +156,10 @@ fdm2 = (fdata - ff)/Bdata
 Bdata = np.array(B2V[maskii])
 fdata = np.array((f2V-np.mean(f2V_zeroB)-p2V[0])[maskii])
 
-ff = FF(Bdata, -5.67252155e-01, -5.70154333e+00,  8.55624761e+00,  3.02469772e-01,  4.55618878e+00,  7.17531028e-01, 0)
-p0 = [.5, -3,  1,  3,  3,  1, 0]
+ff = FF(Bdata,  0.54907486, -1.91023434,  0.05035129,  0.46562708, .01)
+p0 = [0.54907486, -1.91023434,  0.05035129,  0.46562708, .01]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4], popt[5], popt[6])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
