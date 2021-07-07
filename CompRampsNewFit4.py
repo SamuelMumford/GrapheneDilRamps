@@ -21,7 +21,7 @@ def prefilter(f0, b):
 pt0V = '/home/sam/Documents/DriftTests/BRamp0V_6_21_slow.txt'
 pt2V = '/home/sam/Documents/DriftTests/BRamp2V_6_21_slow.txt'
 ptm2V = '/home/sam/Documents/DriftTests/BRamp_min2V_6_7_21.txt'
-
+pt2K = '/home/sam/Documents/DriftTests/BRamp_2K_6_29_21.txt'
 
 F0V = np.loadtxt(pt0V, delimiter="\t")
 B0V = np.array(F0V[:, 0])
@@ -38,6 +38,11 @@ Bm2V = np.array(Fm2V[:, 0])
 fm2V = np.array(Fm2V[:, 1])
 fm2V, Bm2V = prefilter(fm2V, Bm2V)
 
+F2K = np.loadtxt(pt2K, delimiter="\t")
+B2K = np.array(F2K[:, 0])
+f2K = np.array(F2K[:, 1])
+f2K, B2K = prefilter(f2K, B2K)
+
 tol = .0005
 m0V0B = (np.abs(B0V) < tol)
 m2V0B = (np.abs(B2V) < tol)
@@ -46,6 +51,10 @@ f0V_zeroB = f0V[m0V0B]
 f2V_zeroB = f2V[m2V0B]
 fm2V_zeroB = fm2V[mm2V0B]
 
+tolly = .1
+m2k0B = (np.abs(B2K) < tolly)
+f2K_zeroB = f2K[m2k0B]
+
 #Fm2V = np.loadtxt(ptm2V, delimiter="\t")
 #Bm2V = np.array(Fm2V[:, 0])
 #fm2V = np.array(Fm2V[:, 1])
@@ -53,16 +62,6 @@ fm2V_zeroB = fm2V[mm2V0B]
 
 tol_final =1.1
 sm = .1
-
-plt.scatter(B0V, f0V, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'black', label = 'O V')
-plt.scatter(B2V, f2V, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'red', label = '2 V')
-plt.scatter(Bm2V, fm2V, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'green', label = '-2 V')
-plt.grid()
-plt.xlabel('B (T)')
-plt.ylabel('f0 (Hz)')
-plt.legend(title = 'Gate Voltage')
-plt.savefig('/home/sam/Documents/DriftTests/SweepBs_f0_odd.pdf', bbox_inches="tight")
-plt.show()
 
 def cubicC(x, a, b):
     return a + b*x**2
@@ -77,15 +76,18 @@ def makeZeroB(Bs, f0s, tol, smWin):
 p0V = makeZeroB(B0V, f0V-np.mean(f0V_zeroB), tol_final, sm)
 p2V = makeZeroB(B2V, f2V-np.mean(f2V_zeroB), tol_final, sm)
 pm2V = makeZeroB(Bm2V, fm2V-np.mean(fm2V_zeroB), tol_final, sm)
+p2K = makeZeroB(B2K, f2K-np.mean(f2K_zeroB), tol_final, sm)
 
 plotP = np.linspace(0, tol_final)
 plotf0 = cubicC(plotP, 0, p0V[1])
 plotf2 = cubicC(plotP, 0, p2V[1])
 plotfm2 = cubicC(plotP, 0, pm2V[1])
+plotf2K = cubicC(plotP, 0, p2K[1])
 
 maski = (np.abs(B0V) > tol_final)
 maskii = (np.abs(B2V) > tol_final)
 maskiii = (np.abs(Bm2V) > tol_final)
+maski2k = (np.abs(B2K) > tol_final)
 
 al0 = .1
 
@@ -98,12 +100,15 @@ plt.plot(plotP, plotf2, color = 'red')
 plt.scatter(np.abs(Bm2V)[maskiii], (fm2V-np.mean(fm2V_zeroB)-pm2V[0])[maskiii], s=10, linewidth = .5,  zorder=1, marker = '.', c = 'green', label = '-2 V')
 #plt.scatter(np.abs(Bm2V), (fm2V-np.mean(fm2V_zeroB)-pm2V[0]), s=10, linewidth = .5,  zorder=1, marker = '.', c = 'green', alpha=al0)
 plt.plot(plotP, plotfm2, color = 'green')
-plt.grid()
+plt.scatter(np.abs(B2K)[maski2k], (f2K-np.mean(f2K_zeroB)-p2K[0])[maski2k], s=10, linewidth = .5,  zorder=1, marker = '.', c = 'blue', label = '2 K')
+#plt.scatter(np.abs(B2V), (f2V-np.mean(f2V_zeroB)-p2V[0]), s=10, linewidth = .5,  zorder=1, marker = '.', c = 'red', alpha=al0)
+plt.plot(plotP, plotf2K, color = 'blue')
+#plt.grid()
 plt.axvline(tol_final, alpha=.5)
 #plt.axvline(tol_final+sm, color = 'blue')
 #plt.axvline(tol_final-sm, color = 'blue')
 plt.xlabel('|B| (T)')
-plt.ylabel('f0 (Hz)')
+plt.ylabel(r'$f_{0}$ (Hz)')
 plt.legend(title = 'Gate Voltage')
 plt.savefig('/home/sam/Documents/DriftTests/SweepBs_f0.pdf', bbox_inches="tight")
 plt.show()
@@ -113,26 +118,37 @@ offy2 = 0
 Bdata = np.array(B0V[maski])
 fdata = np.array((f0V-np.mean(f0V_zeroB)-p0V[0])[maski] - offy)
 
-def FF(x, a, b, d, e):
-    c=1.3
+def FF(x, a, b, d, e, f):
+    c=1.22
     q1 = (2*a + 1)/(a)
     l1 = 1/(2*a)
     polyP = b*x*(q1/np.tanh(q1*c*a*x) - l1/(np.tanh(c*a*x*l1)))
     polyP += d*np.sign(x)*x
-    polyP += e
+    polyP += e + f*np.sign(x)
     #polyP += g*np.abs(x)
     return polyP
 
-ff = FF(Bdata,  2, 2, -2, 1.5)
-p0 = [2, 2, -2, 1.5]
+ff = FF(Bdata,  2, 2, -2, 1.5, 0)
+p0 = [2, 2, -2, 1.5, 0]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
+offpart = FF(Bdata, popt[0], 0, popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
-plt.plot(Bdata, ff, color = 'black', label = 'fit')
-plt.plot(Bdata, fdata, color = 'red', label = 'data')
-plt.ylabel(r'$f_{0}$ (Hz)')
+sys0 = FF(B0V, popt[0],0, 0, popt[3], popt[4])
+
+plt.plot(Bdata, (ff-popt[3]), color = 'black', label = 'fit')
+plt.plot(Bdata, (fdata-popt[3]), color = 'red', label = 'data')
+plt.ylabel(r'$f_{0}$')
+plt.xlabel('B (T)')
+plt.legend(loc = 'best')
+plt.show()
+
+
+plt.plot(Bdata, (ff-popt[3])/Bdata, color = 'black', label = 'fit')
+plt.plot(Bdata, (fdata-popt[3])/Bdata, color = 'red', label = 'data')
+plt.ylabel(r'$\mu$')
 plt.xlabel('B (T)')
 plt.legend(loc = 'best')
 plt.show()
@@ -143,12 +159,14 @@ fd0 = (fdata - ff)/Bdata
 Bdata = np.array(Bm2V[maskiii])
 fdata = np.array((fm2V-np.mean(fm2V_zeroB)-pm2V[0])[maskiii])
 
-ff = FF(Bdata,  2, 2, -2, 1.5)
-p0 = [2, 2, -2, 1.5]
+ff = FF(Bdata,  2, 2, -2, 1.5, 0)
+p0 = [2, 2, -2, 1.5, 0]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
+
+sysm2 = FF(Bm2V, popt[0],0, 0, popt[3], popt[4])
 
 bdm2 = Bdata
 fdm2 = (fdata - ff)/Bdata
@@ -156,15 +174,45 @@ fdm2 = (fdata - ff)/Bdata
 Bdata = np.array(B2V[maskii])
 fdata = np.array((f2V-np.mean(f2V_zeroB)-p2V[0])[maskii])
 
-ff = FF(Bdata,  2, 2, -2, 1.5)
-p0 = [2, 2, -2, 1.5]
+ff = FF(Bdata,  2, 2, -2, 1.5, 0)
+p0 = [2, 2, -2, 1.5, 0]
 popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
-ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3])
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
 print(popt)
 print(np.sqrt(np.diag(pcov)))
 
+sys2 = FF(B2V, popt[0],0, 0, popt[3], popt[4])
+
 bd2 = Bdata
 fd2 = (fdata - ff)/Bdata
+
+
+Bdata = np.array(B2K[maski2k])
+fdata = np.array((f2K-np.mean(f2K_zeroB)-p2K[0])[maski2k])
+
+ff = FF(Bdata,  2, 2, -2, 1.5, 0)
+p0 = [2, 2, -2, 1.5, 0]
+popt, pcov = curve_fit(FF, Bdata, fdata, p0=p0, maxfev=5000)
+ff = FF(Bdata, popt[0],popt[1], popt[2], popt[3], popt[4])
+print(popt)
+print(np.sqrt(np.diag(pcov)))
+
+bd2K = Bdata
+fd2K = (fdata - ff)/Bdata
+
+sys2k = FF(B2K, popt[0],0, 0, popt[3], popt[4])
+
+plt.scatter(np.abs(B0V), f0V-np.mean(f0V_zeroB)-sys0, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'black', label = 'O V')
+plt.scatter(np.abs(B2V), f2V-np.mean(f2V_zeroB)-sys2, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'red', label = '2 V')
+plt.scatter(np.abs(Bm2V), fm2V-np.mean(fm2V_zeroB)-sysm2, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'green', label = '-2 V')
+plt.scatter(np.abs(B2K), f2K-np.mean(f2K_zeroB)-sys2k, s=10, linewidth = .5,  zorder=1, marker = '.', c = 'blue', label = '2 K')
+#plt.grid()
+plt.xlabel('|B| (T)')
+plt.ylabel(r'$\Delta f_{0}$ (Hz)')
+plt.legend(title = 'Gate Voltage')
+plt.savefig('/home/sam/Documents/DriftTests/SweepBs_f0_odd.pdf', bbox_inches="tight")
+plt.show()
+
 
 cf = 5E7
 plt.scatter(1/bdm2, fdm2*cf, s=1, linewidth = .5,  zorder=1, color = 'green', label = '-2 V')
@@ -178,10 +226,35 @@ plt.plot(new_x, new_y, color = 'black', alpha = .25)
 plt.scatter(1/bd2, fd2*cf, s=1, linewidth = .5,  zorder=1, color = 'red', label = '2 V')
 L = sorted(zip(1/bd2,fd2*cf))#, key=operator.itemgetter(0))
 new_x, new_y = zip(*L)
-plt.plot(new_x, new_y, color = 'red', alpha = .25)
+plt.scatter(1/bd2K, fd2K*cf, s=1, linewidth = .5,  zorder=1, color = 'blue', label = '2 K')
+L = sorted(zip(1/bd2K,fd2K*cf))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.plot(new_x, new_y, color = 'blue', alpha = .25)
 plt.ylabel(r'm ($\mu_{B})$')
 plt.xlabel(r'1/B (T$^{-1}$)')
 plt.legend(loc = 'best')
+plt.show()
+
+cf = 5E7
+plt.scatter(np.abs(bdm2), fdm2*cf*np.sign(bdm2), s=1, linewidth = .5,  zorder=1, color = 'green', label = '-2 V')
+L = sorted(zip(np.abs(bdm2),fdm2*cf*np.sign(bdm2)))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.plot(new_x, new_y, color = 'green', alpha = .25)
+plt.scatter(np.abs(bd0), fd0*cf*np.sign(bd0), s=1, linewidth = .5,  zorder=1, color = 'black', label = '0 V')
+L = sorted(zip(np.abs(bd0),fd0*cf*np.sign(bd0)))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.plot(new_x, new_y, color = 'black', alpha = .25)
+plt.scatter(np.abs(bd2), fd2*cf*np.sign(bd2), s=1, linewidth = .5,  zorder=1, color = 'red', label = '2 V')
+L = sorted(zip(np.abs(bd2),fd2*cf*np.sign(bd2)))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.scatter(np.abs(bd2K), fd2K*cf*np.sign(bd2K), s=1, linewidth = .5,  zorder=1, color = 'blue', label = '2 K')
+L = sorted(zip(np.abs(bd2K),fd2K*cf*np.sign(bd2K)))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.plot(new_x, new_y, color = 'blue', alpha = .25)
+plt.ylabel(r'$\mu$*Sign($B$) ($\mu_{B})$')
+plt.xlabel(r'|B| (T)')
+plt.legend(loc = 'best')
+plt.savefig('/home/sam/Documents/DriftTests/MagFitError.pdf', bbox_inches="tight")
 plt.show()
 
 
@@ -197,6 +270,10 @@ plt.scatter(1/bd2, fd2*bd2, s=1, linewidth = .5,  zorder=1, color = 'red', label
 L = sorted(zip(1/bd2,fd2*bd2))#, key=operator.itemgetter(0))
 new_x, new_y = zip(*L)
 plt.plot(new_x, new_y, color = 'red', alpha = .25)
+plt.scatter(1/bd2K, fd2K*bd2K, s=1, linewidth = .5,  zorder=1, color = 'blue', label = '2 K')
+L = sorted(zip(1/bd2K,fd2K*bd2K))#, key=operator.itemgetter(0))
+new_x, new_y = zip(*L)
+plt.plot(new_x, new_y, color = 'blue', alpha = .25)
 plt.ylabel(r'$\delta f_{0}$')
 plt.xlabel(r'1/B (T$^{-1}$)')
 plt.legend(loc = 'best')
@@ -247,7 +324,7 @@ plt.axvline(-tol_final, alpha=.5)
 plt.axvline(tol_final, alpha=.5)
 plt.grid()
 plt.xlabel('B (T)')
-plt.ylabel(r'm ($\mu_{B})$')
+plt.ylabel(r'$\mu$ ($\mu_{B})$')
 #plt.ylim(-2, 2)
 #plt.xlim(-.5, .5)
 plt.legend(loc='best', prop={'size':10}).set_title("Gate Voltage", prop = {'size':10})
